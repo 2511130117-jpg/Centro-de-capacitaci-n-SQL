@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard CRUD - CentroCapacitacion</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --border: #e2e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+  body { background: var(--bg); color: var(--text); padding: 24px; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 24px; }
+  h1 { font-size: 1.5rem; font-weight: 700; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-outline { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { background: #f8fafc; }
+  .btn-danger { background: #fee2e2; color: #b91c1c; }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .kpi-card { background: var(--card); padding: 18px; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .kpi-title { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .kpi-value { font-size: 1.8rem; font-weight: 700; margin-top: 6px; color: var(--text); }
+  .kpi-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+  .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
+  .tab { padding: 10px 16px; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .card-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .card-title { font-size: 1.05rem; font-weight: 700; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+  input[type="text"], input[type="number"], select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.88rem; outline: none; }
+  input:focus, select:focus { border-color: var(--primary); }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left; }
+  th { background: #f8fafc; color: var(--muted); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: #f8fafc; }
+
+  .badge { padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-yellow { background: #fef3c7; color: #b45309; }
+  .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-gray { background: #f1f5f9; color: #475569; }
+
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+  .bar-row { margin-bottom: 12px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; font-weight: 500; }
+  .bar-track { background: #e2e8f0; height: 10px; border-radius: 999px; overflow: hidden; }
+  .bar-fill { background: var(--primary); height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+
+  /* Modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.5); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--card); border-radius: 12px; width: 100%; max-width: 440px; padding: 22px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+  .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 0.83rem; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+  .form-group input, .form-group select { width: 100%; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; max-width: 380px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 100; }
+  .toast.show { opacity: 1; }
+  .toast.error { background: #b91c1c; }
+  .toast.success { background: #15803d; }
+
+  .rule-box { background: #f8fafc; border-left: 4px solid var(--primary); padding: 12px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 0.88rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>CentroCapacitacion — Dashboard CRUD</h1>
+      <p class="subtitle">Gestión local interactiva con validación de integridad referencial, restricciones CHECK y Triggers SQL</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" onclick="exportSQL()">Exportar SQL</button>
+      <button class="btn btn-danger" onclick="resetDB()">Restaurar Datos Iniciales</button>
+    </div>
+  </header>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="resumen">Vista Consolidada</div>
+    <div class="tab" data-tab="alumnos">Alumnos</div>
+    <div class="tab" data-tab="profesores">Profesores</div>
+    <div class="tab" data-tab="cursos">Cursos</div>
+    <div class="tab" data-tab="inscripciones">Inscripciones</div>
+    <div class="tab" data-tab="esquema">Reglas SQL & Trigger</div>
+  </div>
+
+  <!-- VISTA CONSOLIDADA -->
+  <div class="panel active" id="panel-resumen">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Promedio de Notas por Curso</span></div>
+        <div id="chartCursos"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Top 5 Mejores Calificaciones</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Alumno</th><th>Curso</th><th>Nota</th></tr></thead>
+            <tbody id="topAlumnosBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Vista Relacional Completa (JOIN Alumnos - Inscripciones - Cursos - Profesores)</span>
+        <input type="text" id="searchResumen" placeholder="Buscar alumno, curso o profesor..." oninput="renderResumen()">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID Alumno</th>
+              <th>Alumno</th>
+              <th>DNI</th>
+              <th>Curso Inscrito</th>
+              <th>Docente Asignado</th>
+              <th>Nota</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="resumenTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALUMNOS -->
+  <div class="panel" id="panel-alumnos">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Tabla: Alumnos (CHECK edad &gt;= 15, DNI UNIQUE)</span>
+        <div class="controls">
+          <input type="text" id="searchAlumnos" placeholder="Buscar por nombre o DNI..." oninput="renderAlumnos()">
+          <button class="btn btn-primary" onclick="openModal('alumnos')">+ Nuevo Alumno</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID_alumno</th><th>nombre_alumno</th><th>DNI</th><th>edad</th><th>Inscripción</th><th>Acciones</th></tr></thead>
+          <tbody id="alumnosTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFESORES -->
+  <div class="panel" id="panel-profesores">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Tabla: Profesores (CHECK edad &gt;= 21, Trigger activo)</span>
+        <div class="controls">
+          <input type="text" id="searchProfesores" placeholder="Buscar por nombre o DNI..." oninput="renderProfesores()">
+          <button class="btn btn-primary" onclick="openModal('profesores')">+ Nuevo Profesor</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID_prof</th><th>nombre_prof</th><th>DNI</th><th>edad</th><th>Cursos Asignados</th><th>Acciones</th></tr></thead>
+          <tbody id="profesoresTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CURSOS -->
+  <div class="panel" id="panel-cursos">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Tabla: Cursos (FK ID_prof &rarr; Profesores)</span>
+        <div class="controls">
+          <input type="text" id="searchCursos" placeholder="Buscar curso o docente..." oninput="renderCursos()">
+          <button class="btn btn-primary" onclick="openModal('cursos')">+ Nuevo Curso</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID_curso</th><th>nombre_curso</th><th>ID_prof (Docente)</th><th>Alumnos Inscritos</th><th>Acciones</th></tr></thead>
+          <tbody id="cursosTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSCRIPCIONES -->
+  <div class="panel" id="panel-inscripciones">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Tabla: Inscripciones (Relación 1:1 con Alumnos, CHECK notas 0-20)</span>
+        <div class="controls">
+          <input type="text" id="searchInscripciones" placeholder="Buscar alumno o curso..." oninput="renderInscripciones()">
+          <button class="btn btn-primary" onclick="openModal('inscripciones')">+ Nueva Inscripción</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID_alumno</th><th>nombre_alumno</th><th>notas</th><th>ID_curso</th><th>Acciones</th></tr></thead>
+          <tbody id="inscripcionesTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESQUEMA Y REGLAS -->
+  <div class="panel" id="panel-esquema">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Restricciones y Reglas SQL Implementadas en el CRUD</span></div>
+      <div class="rule-box"><strong>Trigger <code>validar_curso_antes_de_profesor</code>:</strong> Al insertar un nuevo registro en <code>Profesores</code>, el sistema verifica que exista al menos un curso con <code>ID_prof IS NULL</code>. Si todos los cursos ya tienen profesor asignado, bloquea la inserción igual que el <code>ROLLBACK TRANSACTION</code> en SQL Server.</div>
+      <div class="rule-box"><strong>Integridad Referencial (<code>ON DELETE NO ACTION</code>):</strong> No permite eliminar un profesor si tiene cursos asignados, ni eliminar un curso si tiene alumnos inscritos.</div>
+      <div class="rule-box"><strong>Integridad Referencial (<code>ON DELETE CASCADE</code> & <code>ON UPDATE CASCADE</code>):</strong> Al eliminar un alumno se elimina automáticamente su inscripción. Al editar el nombre de un alumno se actualiza en cascada en <code>Inscripciones</code>.</div>
+      <div class="rule-box"><strong>Restricciones <code>CHECK</code> y <code>UNIQUE</code>:</strong> Valida edad de alumnos (&ge; 15), edad de profesores (&ge; 21), notas entre 0.00 y 20.00, unicidad de DNI y relación 1:1 en inscripciones.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CRUD -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Formulario</div>
+    <form id="crudForm" onsubmit="handleFormSubmit(event)">
+      <div id="formFields"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'centro_capacitacion_db_v1';
+
+const INITIAL_DATA = {
+  profesores: [
+    { ID_prof: 1, nombre_prof: 'Carlos Mendoza', DNI: '41258963', edad: 42 },
+    { ID_prof: 2, nombre_prof: 'Laura Torres', DNI: '42589631', edad: 36 },
+    { ID_prof: 3, nombre_prof: 'Roberto Silva', DNI: '39852147', edad: 48 },
+    { ID_prof: 4, nombre_prof: 'Ana Paredes', DNI: '44123698', edad: 34 },
+    { ID_prof: 5, nombre_prof: 'Jorge Salazar', DNI: '40789456', edad: 45 }
+  ],
+  cursos: [
+    { ID_curso: 1, nombre_curso: 'Base de Datos SQL', ID_prof: 1 },
+    { ID_curso: 2, nombre_curso: 'Desarrollo Web Full Stack', ID_prof: 2 },
+    { ID_curso: 3, nombre_curso: 'Python para Ciencia de Datos', ID_prof: 3 },
+    { ID_curso: 4, nombre_curso: 'Ciberseguridad Aplicada', ID_prof: 4 },
+    { ID_curso: 5, nombre_curso: 'Gestión Ágil de Proyectos', ID_prof: 5 }
+  ],
+  alumnos: [
+    { ID_alumno: 1, nombre_alumno: 'María Fernández', DNI: '71234561', edad: 21 },
+    { ID_alumno: 2, nombre_alumno: 'Luis Gómez', DNI: '71234562', edad: 23 },
+    { ID_alumno: 3, nombre_alumno: 'Sofía Castro', DNI: '71234563', edad: 19 },
+    { ID_alumno: 4, nombre_alumno: 'Diego Morales', DNI: '71234564', edad: 25 },
+    { ID_alumno: 5, nombre_alumno: 'Valeria Quispe', DNI: '71234565', edad: 22 },
+    { ID_alumno: 6, nombre_alumno: 'Andrés Vargas', DNI: '71234566', edad: 24 },
+    { ID_alumno: 7, nombre_alumno: 'Camila Rojas', DNI: '71234567', edad: 20 },
+    { ID_alumno: 8, nombre_alumno: 'Sebastián Díaz', DNI: '71234568', edad: 26 },
+    { ID_alumno: 9, nombre_alumno: 'Lucía Herrera', DNI: '71234569', edad: 21 },
+    { ID_alumno: 10, nombre_alumno: 'Mateo Flores', DNI: '71234570', edad: 22 }
+  ],
+  inscripciones: [
+    { ID_alumno: 1, nombre_alumno: 'María Fernández', notas: 18.50, ID_curso: 1 },
+    { ID_alumno: 2, nombre_alumno: 'Luis Gómez', notas: 15.00, ID_curso: 1 },
+    { ID_alumno: 3, nombre_alumno: 'Sofía Castro', notas: 19.00, ID_curso: 2 },
+    { ID_alumno: 4, nombre_alumno: 'Diego Morales', notas: 14.50, ID_curso: 2 },
+    { ID_alumno: 5, nombre_alumno: 'Valeria Quispe', notas: 17.25, ID_curso: 3 },
+    { ID_alumno: 6, nombre_alumno: 'Andrés Vargas', notas: 16.00, ID_curso: 3 },
+    { ID_alumno: 7, nombre_alumno: 'Camila Rojas', notas: 18.00, ID_curso: 4 },
+    { ID_alumno: 8, nombre_alumno: 'Sebastián Díaz', notas: 13.75, ID_curso: 4 },
+    { ID_alumno: 9, nombre_alumno: 'Lucía Herrera', notas: 16.50, ID_curso: 5 },
+    { ID_alumno: 10, nombre_alumno: 'Mateo Flores', notas: 17.00, ID_curso: 5 }
+  ]
+};
+
+let db = loadDB();
+let currentModal = { entity: null, mode: null, id: null };
+
+function loadDB() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_DATA));
+}
+
+function saveDB() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  renderAll();
+}
+
+function resetDB() {
+  if (!confirm('¿Restaurar todos los registros a los valores originales del archivo SQL?')) return;
+  db = JSON.parse(JSON.stringify(INITIAL_DATA));
+  saveDB();
+  showToast('Base de datos restaurada correctamente.', 'success');
+}
+
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// Navegación de pestañas
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+function getNextId(arr, key) {
+  return arr.length ? Math.max(...arr.map(item => item[key])) + 1 : 1;
+}
+
+function getNotaBadge(nota) {
+  const n = Number(nota);
+  if (n >= 17) return `<span class="badge badge-green">${n.toFixed(2)}</span>`;
+  if (n >= 14) return `<span class="badge badge-yellow">${n.toFixed(2)}</span>`;
+  return `<span class="badge badge-red">${n.toFixed(2)}</span>`;
+}
+
+function renderKPIs() {
+  const totalAlumnos = db.alumnos.length;
+  const totalProf = db.profesores.length;
+  const totalCursos = db.cursos.length;
+  const cursosLibres = db.cursos.filter(c => c.ID_prof === null).length;
+  const avgNota = db.inscripciones.length
+    ? (db.inscripciones.reduce((acc, i) => acc + Number(i.notas), 0) / db.inscripciones.length).toFixed(2)
+    : '0.00';
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-title">Alumnos Registrados</div>
+      <div class="kpi-value">${totalAlumnos}</div>
+      <div class="kpi-sub">${db.inscripciones.length} con inscripción activa</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Profesores Activos</div>
+      <div class="kpi-value">${totalProf}</div>
+      <div class="kpi-sub">Trigger de curso disponible activo</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Cursos Ofertados</div>
+      <div class="kpi-value">${totalCursos}</div>
+      <div class="kpi-sub">${cursosLibres} sin docente asignado</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Promedio General</div>
+      <div class="kpi-value">${avgNota}</div>
+      <div class="kpi-sub">Escala vigesimal (0.00 - 20.00)</div>
+    </div>
+  `;
+}
+
+function renderResumen() {
+  // Gráfico barras por curso
+  const chartEl = document.getElementById('chartCursos');
+  chartEl.innerHTML = db.cursos.map(c => {
+    const insc = db.inscripciones.filter(i => i.ID_curso === c.ID_curso);
+    const avg = insc.length ? (insc.reduce((s, i) => s + Number(i.notas), 0) / insc.length) : 0;
+    const pct = (avg / 20) * 100;
+    return `
+      <div class="bar-row">
+        <div class="bar-label">
+          <span>${c.nombre_curso} (${insc.length} alum.)</span>
+          <strong>${insc.length ? avg.toFixed(2) : 'Sin notas'}</strong>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      </div>
+    `;
+  }).join('') || '<p class="subtitle">No hay cursos registrados.</p>';
+
+  // Top 5
+  const top5 = [...db.inscripciones].sort((a, b) => b.notas - a.notas).slice(0, 5);
+  document.getElementById('topAlumnosBody').innerHTML = top5.map(i => {
+    const curso = db.cursos.find(c => c.ID_curso === i.ID_curso);
+    return `<tr>
+      <td>${i.nombre_alumno}</td>
+      <td>${curso ? curso.nombre_curso : 'N/A'}</td>
+      <td>${getNotaBadge(i.notas)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="3">Sin inscripciones</td></tr>';
+
+  // Tabla JOIN
+  const q = document.getElementById('searchResumen').value.toLowerCase();
+  const rows = db.alumnos.map(a => {
+    const insc = db.inscripciones.find(i => i.ID_alumno === a.ID_alumno);
+    const curso = insc ? db.cursos.find(c => c.ID_curso === insc.ID_curso) : null;
+    const prof = (curso && curso.ID_prof) ? db.profesores.find(p => p.ID_prof === curso.ID_prof) : null;
+    return { a, insc, curso, prof };
+  }).filter(r => {
+    const text = `${r.a.nombre_alumno} ${r.a.DNI} ${r.curso ? r.curso.nombre_curso : ''} ${r.prof ? r.prof.nombre_prof : ''}`.toLowerCase();
+    return text.includes(q);
+  });
+
+  document.getElementById('resumenTableBody').innerHTML = rows.map(r => `
+    <tr>
+      <td>#${r.a.ID_alumno}</td>
+      <td><strong>${r.a.nombre_alumno}</strong></td>
+      <td>${r.a.DNI}</td>
+      <td>${r.curso ? r.curso.nombre_curso : '<span class="badge badge-gray">Sin curso</span>'}</td>
+      <td>${r.prof ? r.prof.nombre_prof : (r.curso ? '<span class="badge badge-yellow">Por asignar</span>' : '-')}</td>
+      <td>${r.insc ? getNotaBadge(r.insc.notas) : '-'}</td>
+      <td>${r.insc ? (r.insc.notas >= 14 ? '<span class="badge badge-green">Aprobado</span>' : '<span class="badge badge-red">Desaprobado</span>') : '<span class="badge badge-gray">No inscrito</span>'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAlumnos() {
+  const q = document.getElementById('searchAlumnos').value.toLowerCase();
+  const list = db.alumnos.filter(a => a.nombre_alumno.toLowerCase().includes(q) || a.DNI.includes(q));
+  document.getElementById('alumnosTableBody').innerHTML = list.map(a => {
+    const insc = db.inscripciones.find(i => i.ID_alumno === a.ID_alumno);
+    const curso = insc ? db.cursos.find(c => c.ID_curso === insc.ID_curso) : null;
+    return `<tr>
+      <td>${a.ID_alumno}</td>
+      <td><strong>${a.nombre_alumno}</strong></td>
+      <td>${a.DNI}</td>
+      <td>${a.edad} años</td>
+      <td>${curso ? `<span class="badge badge-green">${curso.nombre_curso}</span>` : '<span class="badge badge-gray">Sin inscribir</span>'}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openModal('alumnos', ${a.ID_alumno})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('alumnos', ${a.ID_alumno})">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderProfesores() {
+  const q = document.getElementById('searchProfesores').value.toLowerCase();
+  const list = db.profesores.filter(p => p.nombre_prof.toLowerCase().includes(q) || p.DNI.includes(q));
+  document.getElementById('profesoresTableBody').innerHTML = list.map(p => {
+    const cursos = db.cursos.filter(c => c.ID_prof === p.ID_prof).map(c => c.nombre_curso).join(', ');
+    return `<tr>
+      <td>${p.ID_prof}</td>
+      <td><strong>${p.nombre_prof}</strong></td>
+      <td>${p.DNI}</td>
+      <td>${p.edad} años</td>
+      <td>${cursos || '<span class="badge badge-gray">Ninguno</span>'}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openModal('profesores', ${p.ID_prof})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('profesores', ${p.ID_prof})">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCursos() {
+  const q = document.getElementById('searchCursos').value.toLowerCase();
+  const list = db.cursos.filter(c => {
+    const prof = db.profesores.find(p => p.ID_prof === c.ID_prof);
+    return c.nombre_curso.toLowerCase().includes(q) || (prof && prof.nombre_prof.toLowerCase().includes(q));
+  });
+  document.getElementById('cursosTableBody').innerHTML = list.map(c => {
+    const prof = db.profesores.find(p => p.ID_prof === c.ID_prof);
+    const count = db.inscripciones.filter(i => i.ID_curso === c.ID_curso).length;
+    return `<tr>
+      <td>${c.ID_curso}</td>
+      <td><strong>${c.nombre_curso}</strong></td>
+      <td>${prof ? `${prof.ID_prof} - ${prof.nombre_prof}` : '<span class="badge badge-yellow">NULL (Disponible)</span>'}</td>
+      <td>${count} alumnos</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openModal('cursos', ${c.ID_curso})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('cursos', ${c.ID_curso})">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderInscripciones() {
+  const q = document.getElementById('searchInscripciones').value.toLowerCase();
+  const list = db.inscripciones.filter(i => {
+    const curso = db.cursos.find(c => c.ID_curso === i.ID_curso);
+    return i.nombre_alumno.toLowerCase().includes(q) || (curso && curso.nombre_curso.toLowerCase().includes(q));
+  });
+  document.getElementById('inscripcionesTableBody').innerHTML = list.map(i => {
+    const curso = db.cursos.find(c => c.ID_curso === i.ID_curso);
+    return `<tr>
+      <td>${i.ID_alumno}</td>
+      <td><strong>${i.nombre_alumno}</strong></td>
+      <td>${getNotaBadge(i.notas)}</td>
+      <td>${curso ? `${curso.ID_curso} - ${curso.nombre_curso}` : i.ID_curso}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openModal('inscripciones', ${i.ID_alumno})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('inscripciones', ${i.ID_alumno})">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAll() {
+  renderKPIs();
+  renderResumen();
+  renderAlumnos();
+  renderProfesores();
+  renderCursos();
+  renderInscripciones();
+}
+
+// CRUD MODALS
+function openModal(entity, id = null) {
+  currentModal = { entity, mode: id !== null ? 'edit' : 'create', id };
+  const titleEl = document.getElementById('modalTitle');
+  const fieldsEl = document.getElementById('formFields');
+
+  if (entity === 'alumnos') {
+    const item = id !== null ? db.alumnos.find(a => a.ID_alumno === id) : { nombre_alumno: '', DNI: '', edad: 18 };
+    titleEl.textContent = id !== null ? `Editar Alumno #${id}` : 'Nuevo Alumno';
+    fieldsEl.innerHTML = `
+      <div class="form-group"><label>Nombre del Alumno</label><input type="text" name="nombre_alumno" value="${item.nombre_alumno}" required maxlength="100"></div>
+      <div class="form-group"><label>DNI (Único)</label><input type="text" name="DNI" value="${item.DNI}" required maxlength="15"></div>
+      <div class="form-group"><label>Edad (Mínimo 15)</label><input type="number" name="edad" value="${item.edad}" min="15" required></div>
+    `;
+  } else if (entity === 'profesores') {
+    // Validar Trigger antes de abrir modal de creación
+    if (id === null) {
+      const hasAvailableCourse = db.cursos.some(c => c.ID_prof === null);
+      if (!hasAvailableCourse) {
+        showToast('Error 50001 (Trigger): No es posible registrar un docente porque no existe ningún curso disponible sin profesor asociado.', 'error');
+        return;
+      }
+    }
+    const item = id !== null ? db.profesores.find(p => p.ID_prof === id) : { nombre_prof: '', DNI: '', edad: 25 };
+    titleEl.textContent = id !== null ? `Editar Profesor #${id}` : 'Nuevo Profesor';
+    fieldsEl.innerHTML = `
+      <div class="form-group"><label>Nombre del Profesor</label><input type="text" name="nombre_prof" value="${item.nombre_prof}" required maxlength="100"></div>
+      <div class="form-group"><label>DNI (Único)</label><input type="text" name="DNI" value="${item.DNI}" required maxlength="15"></div>
+      <div class="form-group"><label>Edad (Mínimo 21)</label><input type="number" name="edad" value="${item.edad}" min="21" required></div>
+    `;
+  } else if (entity === 'cursos') {
+    const item = id !== null ? db.cursos.find(c => c.ID_curso === id) : { nombre_curso: '', ID_prof: '' };
+    titleEl.textContent = id !== null ? `Editar Curso #${id}` : 'Nuevo Curso';
+    const profOptions = `<option value="">-- NULL (Sin profesor asignado) --</option>` +
+      db.profesores.map(p => `<option value="${p.ID_prof}" ${item.ID_prof === p.ID_prof ? 'selected' : ''}>${p.ID_prof} - ${p.nombre_prof}</option>`).join('');
+    fieldsEl.innerHTML = `
+      <div class="form-group"><label>Nombre del Curso</label><input type="text" name="nombre_curso" value="${item.nombre_curso}" required maxlength="100"></div>
+      <div class="form-group"><label>Profesor Asignado (FK ID_prof)</label><select name="ID_prof">${profOptions}</select></div>
+    `;
+  } else if (entity === 'inscripciones') {
+    const item = id !== null ? db.inscripciones.find(i => i.ID_alumno === id) : { ID_alumno: '', notas: 15.00, ID_curso: '' };
+    if (id === null) {
+      const disponibles = db.alumnos.filter(a => !db.inscripciones.some(i => i.ID_alumno === a.ID_alumno));
+      if (!disponibles.length) {
+        showToast('Todos los alumnos registrados ya cuentan con una inscripción (Relación 1:1).', 'error');
+        return;
+      }
+      if (!db.cursos.length) {
+        showToast('Debe existir al menos un curso para inscribir alumnos.', 'error');
+        return;
+      }
+      titleEl.textContent = 'Nueva Inscripción';
+      const alumOpts = disponibles.map(a => `<option value="${a.ID_alumno}">${a.ID_alumno} - ${a.nombre_alumno}</option>`).join('');
+      const cursoOpts = db.cursos.map(c => `<option value="${c.ID_curso}">${c.ID_curso} - ${c.nombre_curso}</option>`).join('');
+      fieldsEl.innerHTML = `
+        <div class="form-group"><label>Alumno (Solo sin inscripción previa)</label><select name="ID_alumno" required>${alumOpts}</select></div>
+        <div class="form-group"><label>Curso</label><select name="ID_curso" required>${cursoOpts}</select></div>
+        <div class="form-group"><label>Nota (0.00 a 20.00)</label><input type="number" step="0.01" min="0" max="20" name="notas" value="15.00" required></div>
+      `;
+    } else {
+      titleEl.textContent = `Editar Inscripción de ${item.nombre_alumno}`;
+      const cursoOpts = db.cursos.map(c => `<option value="${c.ID_curso}" ${item.ID_curso === c.ID_curso ? 'selected' : ''}>${c.ID_curso} - ${c.nombre_curso}</option>`).join('');
+      fieldsEl.innerHTML = `
+        <div class="form-group"><label>Curso</label><select name="ID_curso" required>${cursoOpts}</select></div>
+        <div class="form-group"><label>Nota (0.00 a 20.00)</label><input type="number" step="0.01" min="0" max="20" name="notas" value="${item.notas}" required></div>
+      `;
+    }
+  }
+
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+}
+
+function handleFormSubmit(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const { entity, mode, id } = currentModal;
+
+  if (entity === 'alumnos') {
+    const nombre = fd.get('nombre_alumno').trim();
+    const dni = fd.get('DNI').trim();
+    const edad = parseInt(fd.get('edad'), 10);
+    if (edad < 15) return showToast('CHECK edad >= 15 incumplido.', 'error');
+    if (db.alumnos.some(a => a.DNI === dni && a.ID_alumno !== id)) return showToast('Error UNIQUE: Ya existe un alumno con ese DNI.', 'error');
+
+    if (mode === 'create') {
+      db.alumnos.push({ ID_alumno: getNextId(db.alumnos, 'ID_alumno'), nombre_alumno: nombre, DNI: dni, edad });
+      showToast('Alumno registrado exitosamente.');
+    } else {
+      const idx = db.alumnos.findIndex(a => a.ID_alumno === id);
+      db.alumnos[idx] = { ID_alumno: id, nombre_alumno: nombre, DNI: dni, edad };
+      // ON UPDATE CASCADE en Inscripciones
+      const insc = db.inscripciones.find(i => i.ID_alumno === id);
+      if (insc) insc.nombre_alumno = nombre;
+      showToast('Alumno actualizado (ON UPDATE CASCADE aplicado).');
+    }
+  } else if (entity === 'profesores') {
+    const nombre = fd.get('nombre_prof').trim();
+    const dni = fd.get('DNI').trim();
+    const edad = parseInt(fd.get('edad'), 10);
+    if (edad < 21) return showToast('CHECK edad >= 21 incumplido.', 'error');
+    if (db.profesores.some(p => p.DNI === dni && p.ID_prof !== id)) return showToast('Error UNIQUE: Ya existe un profesor con ese DNI.', 'error');
+
+    if (mode === 'create') {
+      if (!db.cursos.some(c => c.ID_prof === null)) {
+        return showToast('Error 50001 (Trigger): No existe ningún curso disponible sin profesor asociado.', 'error');
+      }
+      db.profesores.push({ ID_prof: getNextId(db.profesores, 'ID_prof'), nombre_prof: nombre, DNI: dni, edad });
+      showToast('Profesor registrado. Recuerda asignarlo a un curso disponible.');
+    } else {
+      const idx = db.profesores.findIndex(p => p.ID_prof === id);
+      db.profesores[idx] = { ID_prof: id, nombre_prof: nombre, DNI: dni, edad };
+      showToast('Profesor actualizado exitosamente.');
+    }
+  } else if (entity === 'cursos') {
+    const nombre = fd.get('nombre_curso').trim();
+    const rawProf = fd.get('ID_prof');
+    const ID_prof = rawProf === '' ? null : parseInt(rawProf, 10);
+
+    if (mode === 'create') {
+      db.cursos.push({ ID_curso: getNextId(db.cursos, 'ID_curso'), nombre_curso: nombre, ID_prof });
+      showToast('Curso creado exitosamente.');
+    } else {
+      const idx = db.cursos.findIndex(c => c.ID_curso === id);
+      db.cursos[idx] = { ID_curso: id, nombre_curso: nombre, ID_prof };
+      showToast('Curso actualizado exitosamente.');
+    }
+  } else if (entity === 'inscripciones') {
+    const ID_curso = parseInt(fd.get('ID_curso'), 10);
+    const notas = parseFloat(fd.get('notas'));
+    if (isNaN(notas) || notas < 0 || notas > 20) return showToast('CHECK notas >= 0 AND notas <= 20 incumplido.', 'error');
+
+    if (mode === 'create') {
+      const ID_alumno = parseInt(fd.get('ID_alumno'), 10);
+      const alum = db.alumnos.find(a => a.ID_alumno === ID_alumno);
+      db.inscripciones.push({ ID_alumno, nombre_alumno: alum.nombre_alumno, notas: Number(notas.toFixed(2)), ID_curso });
+      showToast('Inscripción registrada exitosamente.');
+    } else {
+      const idx = db.inscripciones.findIndex(i => i.ID_alumno === id);
+      db.inscripciones[idx].ID_curso = ID_curso;
+      db.inscripciones[idx].notas = Number(notas.toFixed(2));
+      showToast('Inscripción actualizada exitosamente.');
+    }
+  }
+
+  closeModal();
+  saveDB();
+}
+
+function deleteRecord(entity, id) {
+  if (entity === 'alumnos') {
+    const hasInsc = db.inscripciones.some(i => i.ID_alumno === id);
+    const msg = hasInsc
+      ? '¿Eliminar alumno? Se aplicará ON DELETE CASCADE y también se eliminará su inscripción.'
+      : '¿Eliminar este alumno?';
+    if (!confirm(msg)) return;
+    db.alumnos = db.alumnos.filter(a => a.ID_alumno !== id);
+    db.inscripciones = db.inscripciones.filter(i => i.ID_alumno !== id);
+    showToast('Alumno eliminado (ON DELETE CASCADE ejecutado).');
+  } else if (entity === 'profesores') {
+    // ON DELETE NO ACTION
+    if (db.cursos.some(c => c.ID_prof === id)) {
+      return showToast('Error FK (ON DELETE NO ACTION): No se puede eliminar un profesor que tiene cursos asignados.', 'error');
+    }
+    if (!confirm('¿Eliminar este profesor?')) return;
+    db.profesores = db.profesores.filter(p => p.ID_prof !== id);
+    showToast('Profesor eliminado exitosamente.');
+  } else if (entity === 'cursos') {
+    // ON DELETE NO ACTION
+    if (db.inscripciones.some(i => i.ID_curso === id)) {
+      return showToast('Error FK (ON DELETE NO ACTION): No se puede eliminar un curso con alumnos inscritos.', 'error');
+    }
+    if (!confirm('¿Eliminar este curso?')) return;
+    db.cursos = db.cursos.filter(c => c.ID_curso !== id);
+    showToast('Curso eliminado exitosamente.');
+  } else if (entity === 'inscripciones') {
+    if (!confirm('¿Eliminar esta inscripción?')) return;
+    db.inscripciones = db.inscripciones.filter(i => i.ID_alumno !== id);
+    showToast('Inscripción eliminada exitosamente.');
+  }
+
+  saveDB();
+}
+
+function exportSQL() {
+  let sql = `-- Script SQL generado desde Dashboard CentroCapacitacion
+USE CentroCapacitacion;
+GO
+
+`;
+  sql += `SET IDENTITY_INSERT Cursos ON;
+`;
+  db.cursos.forEach(c => {
+    sql += `INSERT INTO Cursos (ID_curso, nombre_curso, ID_prof) VALUES (${c.ID_curso}, '${c.nombre_curso.replace(/'/g, "''")}', NULL);
+`;
+  });
+  sql += `SET IDENTITY_INSERT Cursos OFF;
+GO
+
+`;
+
+  sql += `SET IDENTITY_INSERT Profesores ON;
+`;
+  db.profesores.forEach(p => {
+    sql += `INSERT INTO Profesores (ID_prof, nombre_prof, DNI, edad) VALUES (${p.ID_prof}, '${p.nombre_prof.replace(/'/g, "''")}', '${p.DNI}', ${p.edad});
+`;
+  });
+  sql += `SET IDENTITY_INSERT Profesores OFF;
+GO
+
+`;
+
+  db.cursos.filter(c => c.ID_prof !== null).forEach(c => {
+    sql += `UPDATE Cursos SET ID_prof = ${c.ID_prof} WHERE ID_curso = ${c.ID_curso};
+`;
+  });
+  sql += `GO
+
+`;
+
+  sql += `SET IDENTITY_INSERT Alumnos ON;
+`;
+  db.alumnos.forEach(a => {
+    sql += `INSERT INTO Alumnos (ID_alumno, nombre_alumno, DNI, edad) VALUES (${a.ID_alumno}, '${a.nombre_alumno.replace(/'/g, "''")}', '${a.DNI}', ${a.edad});
+`;
+  });
+  sql += `SET IDENTITY_INSERT Alumnos OFF;
+GO
+
+`;
+
+  db.inscripciones.forEach(i => {
+    sql += `INSERT INTO Inscripciones (ID_alumno, nombre_alumno, notas, ID_curso) VALUES (${i.ID_alumno}, '${i.nombre_alumno.replace(/'/g, "''")}', ${Number(i.notas).toFixed(2)}, ${i.ID_curso});
+`;
+  });
+  sql += `GO
+`;
+
+  const blob = new Blob([sql], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CentroCapacitacion_actualizado.sql';
+  a.click();
+  showToast('Archivo .sql exportado correctamente.');
+}
+
+renderAll();
+</script>
+</body>
+</html>
